@@ -2,27 +2,30 @@
   "expo": {
     "name": "gamerblocker",
     "slug": "gamerblocker",
+    "platforms": ["ios", "android", "web"],
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
-    "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
+    "updates": {
+      "fallbackToCacheTimeout": 0
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
-      "supportsTablet": true
+      "bundleIdentifier": "com.gamerblocker.app"
     },
     "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      }
+      "package": "com.gamerblocker.app"
     },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    }
+    "scheme": "gamerblocker",
+    "newArchEnabled": true,
+    "description": "",
+    "githubUrl": "https://github.com/your-repo"
   }
 }
