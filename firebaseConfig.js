@@ -5,6 +5,7 @@ import { initializeAuth, getReactNativePersistence } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getAuth } from "firebase/auth"; // добавьте все необходимые импорты для Firebase
+import { getFunctions } from 'firebase/functions';  // Импорт для Firebase Functions
 
 // Конфигурация из Firebase Console
 const firebaseConfig = {
@@ -28,5 +29,8 @@ const auth = initializeAuth(app, {
 // ✅ Инициализация Firestore
 const db = getFirestore(app);
 
+// ✅ Инициализация Cloud Functions
+const functions = getFunctions(app);  // Инициализация Firebase Functions
+
 // ✅ Экспорт всех нужных модулей
-export { app, auth, db };
+export { app, auth, db, functions };
