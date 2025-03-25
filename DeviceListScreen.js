@@ -1,10 +1,8 @@
-// AddDeviceScreen.js
 import React, { useState } from 'react';
-import { View } from 'react-native';
+import { View, Alert } from 'react-native';
 import { TextInput, Button, Text, Card } from 'react-native-paper';
-import { auth, db } from './firebaseConfig';
+import { API_URL } from './config';  // Добавим импорт API_URL из файла конфигурации
 import { v4 as uuidv4 } from 'uuid';
-import { doc, setDoc } from 'firebase/firestore';
 import * as Clipboard from 'expo-clipboard';
 
 export default function AddDeviceScreen({ navigation }) {
@@ -14,39 +12,49 @@ export default function AddDeviceScreen({ navigation }) {
 
     const handleAddDevice = async () => {
         const user = auth.currentUser;
-        if (!user || !deviceName) return;
+        if (!user || !deviceName) {
+            Alert.alert('Ошибка', 'Пожалуйста, введите название устройства.');
+            return;
+        }
 
         setIsLoading(true);
         const deviceId = uuidv4();
-        const deviceRef = doc(db, 'users', user.uid, 'devices', deviceId);
 
-        await setDoc(deviceRef, {
-            deviceName,
-            isBlocked: false,
-            createdAt: new Date(),
-        });
-
+        // Создаем конфигурацию для отправки на сервер
         const config = {
             userId: user.uid,
             deviceId,
             deviceName,
         };
 
-        const response = await fetch('https://yourdomain.com/api/upload-config', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(config),
-        });
+        try {
+            // Запрос на сервер для получения ссылки на exe
+            const response = await fetch(`${API_URL}/generate-download-link`, {  // Используем базовый URL из конфигурации
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(config),
+            });
 
-        const { url } = await response.json();
-        setLink(url);
+            // Обработка ошибки, если сервер не вернул правильный ответ
+            if (!response.ok) {
+                throw new Error('Не удалось получить ссылку на установку.');
+            }
+
+            // Получаем ссылку от сервера
+            const { url } = await response.json();
+            setLink(url);
+        } catch (error) {
+            console.error('Error:', error);
+            Alert.alert('Ошибка', 'Не удалось получить ссылку. Попробуйте еще раз.');
+        }
+
         setIsLoading(false);
     };
 
     const copyLink = async () => {
         if (link) {
             await Clipboard.setStringAsync(link);
-            alert('Ссылка скопирована');
+            Alert.alert('Ссылка скопирована', 'Ссылка на установку скопирована в буфер обмена.');
         }
     };
 

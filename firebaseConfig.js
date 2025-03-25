@@ -1,10 +1,9 @@
 // firebaseConfig.js
 
 import { initializeApp } from 'firebase/app';
-import { initializeAuth, getReactNativePersistence } from 'firebase/auth';
+import { getAuth } from 'firebase/auth'; // Замените на getAuth
 import { getFirestore } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getAuth } from "firebase/auth"; // добавьте все необходимые импорты для Firebase
 import { getFunctions } from 'firebase/functions';  // Импорт для Firebase Functions
 
 // Конфигурация из Firebase Console
@@ -21,10 +20,8 @@ const firebaseConfig = {
 // Инициализация Firebase
 const app = initializeApp(firebaseConfig);
 
-// ✅ Правильная инициализация auth с AsyncStorage
-const auth = initializeAuth(app, {
-    persistence: getReactNativePersistence(AsyncStorage),
-});
+// ✅ Инициализация auth с AsyncStorage
+const auth = getAuth(app); // Используйте getAuth для инициализации аутентификации
 
 // ✅ Инициализация Firestore
 const db = getFirestore(app);

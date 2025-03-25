@@ -1,17 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
-import { AppRegistry } from 'react-native'; // Добавьте это, если его нет
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { PaperProvider } from 'react-native-paper';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { auth } from './firebaseConfig';
+import { API_URL } from './config';
 
 // Screens
 import AuthOptionsScreen from './AuthOptionsScreen';
 import LoginScreen from './LoginScreen';
 import RegisterScreen from './RegisterScreen';
-import AddDeviceScreen from './AddDeviceScreen';
 import DeviceListScreen from './DeviceListScreen';
+import AddDeviceScreen from './AddDeviceScreen';
 import DeviceControlScreen from './DeviceControlScreen';
 import ProfileScreen from './ProfileScreen';
 
@@ -22,19 +20,51 @@ export default function App() {
     const [checkingAuth, setCheckingAuth] = useState(true);
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
-            setUser(user);
-            setCheckingAuth(false);
-        });
-        return () => unsubscribe();
+        const checkUser = async () => {
+            try {
+                const token = await AsyncStorage.getItem('token');
+                if (token) {
+                    const response = await fetch(`${API_URL}/auth/user`, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                        },
+                    });
+                    if (response.ok) {
+                        const data = await response.json();
+                        setUser(data.user);
+                    } else {
+                        setUser(null);
+                    }
+                } else {
+                    setUser(null);
+                }
+            } catch {
+                setUser(null);
+            } finally {
+                setCheckingAuth(false);
+            }
+        };
+
+        checkUser();
     }, []);
 
     const handleLogout = async () => {
-        await signOut(auth);
-        setUser(null);
+        const token = await AsyncStorage.getItem('token');
+        if (token) {
+            await fetch(`${API_URL}/auth/logout`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+            });
+            await AsyncStorage.removeItem('token');
+            setUser(null);
+        }
     };
 
-    if (checkingAuth) return null; // можно показать индикатор загрузки
+    if (checkingAuth) {
+        return null; // Можно показать индикатор загрузки
+    }
 
     return (
         <PaperProvider>
@@ -42,12 +72,8 @@ export default function App() {
                 <Stack.Navigator screenOptions={{ headerShown: false }}>
                     {user ? (
                         <>
-                            <Stack.Screen name="DeviceList">
-                                {(props) => <DeviceListScreen {...props} />}
-                            </Stack.Screen>
-                            <Stack.Screen name="AddDevice">
-                                {(props) => <AddDeviceScreen {...props} onLogout={handleLogout} />}
-                            </Stack.Screen>
+                            <Stack.Screen name="DeviceList" component={DeviceListScreen} />
+                            <Stack.Screen name="AddDevice" component={AddDeviceScreen} />
                             <Stack.Screen name="DeviceControl" component={DeviceControlScreen} />
                             <Stack.Screen name="Profile" component={ProfileScreen} />
                         </>
@@ -63,5 +89,3 @@ export default function App() {
         </PaperProvider>
     );
 }
-
-AppRegistry.registerComponent('gamerblocker', () => App); // Проверьте имя компонента
