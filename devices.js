@@ -1,30 +1,19 @@
 // devices.js
-import { collection, addDoc, updateDoc, doc } from 'firebase/firestore';
-import { auth, db } from './firebaseConfig';
+import { API_URL } from './config';
 
-export const addDevice = async (deviceName) => {
-    const user = auth.currentUser;
-    if (!user) throw new Error('Пользователь не авторизован');
-
-    console.log("Добавление устройства для:", user.uid);
-
-    return await addDoc(collection(db, 'users', user.uid, 'devices'), {
-        deviceName,
-        isBlocked: false,
-        blockFrom: null,
-        blockTo: null,
+export const setBlockDevice = async (deviceId, isBlocked, blockFrom, blockTo, token) => {
+    const response = await fetch(`${API_URL}/devices/block`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ deviceId, isBlocked, blockFrom, blockTo }),
     });
-};
 
-export const setBlockDevice = async (deviceId, isBlocked, blockFrom, blockTo) => {
-    const user = auth.currentUser;
-    if (!user) throw new Error('Пользователь не авторизован');
+    if (!response.ok) {
+        throw new Error('Ошибка при блокировке устройства');
+    }
 
-    const deviceRef = doc(db, 'users', user.uid, 'devices', deviceId);
-
-    return await updateDoc(deviceRef, {
-        isBlocked,
-        blockFrom,
-        blockTo,
-    });
+    return response.json();
 };

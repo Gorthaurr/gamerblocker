@@ -2,14 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { PaperProvider } from 'react-native-paper';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from './config';
 
-// Screens
 import AuthOptionsScreen from './AuthOptionsScreen';
 import LoginScreen from './LoginScreen';
 import RegisterScreen from './RegisterScreen';
-import DeviceListScreen from './DeviceListScreen';
 import AddDeviceScreen from './AddDeviceScreen';
+import DeviceListScreen from './DeviceListScreen';
 import DeviceControlScreen from './DeviceControlScreen';
 import ProfileScreen from './ProfileScreen';
 
@@ -21,50 +21,43 @@ export default function App() {
 
     useEffect(() => {
         const checkUser = async () => {
+            const token = await AsyncStorage.getItem('token');
+            if (!token) {
+                setUser(null);
+                setCheckingAuth(false);
+                return;
+            }
+
             try {
-                const token = await AsyncStorage.getItem('token');
-                if (token) {
-                    const response = await fetch(`${API_URL}/auth/user`, {
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                        },
-                    });
-                    if (response.ok) {
-                        const data = await response.json();
-                        setUser(data.user);
-                    } else {
-                        setUser(null);
-                    }
+                const res = await fetch(`${API_URL}/user`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    setUser(data.user);
                 } else {
+                    await AsyncStorage.removeItem('token');
                     setUser(null);
                 }
-            } catch {
+            } catch (error) {
+                console.error('Auth check failed:', error);
+                await AsyncStorage.removeItem('token');
                 setUser(null);
-            } finally {
-                setCheckingAuth(false);
             }
+
+            setCheckingAuth(false);
         };
 
         checkUser();
     }, []);
 
     const handleLogout = async () => {
-        const token = await AsyncStorage.getItem('token');
-        if (token) {
-            await fetch(`${API_URL}/auth/logout`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-            });
-            await AsyncStorage.removeItem('token');
-            setUser(null);
-        }
+        await AsyncStorage.removeItem('token');
+        setUser(null);
     };
 
-    if (checkingAuth) {
-        return null; // Можно показать индикатор загрузки
-    }
+    if (checkingAuth) return null;
 
     return (
         <PaperProvider>
@@ -72,16 +65,28 @@ export default function App() {
                 <Stack.Navigator screenOptions={{ headerShown: false }}>
                     {user ? (
                         <>
-                            <Stack.Screen name="DeviceList" component={DeviceListScreen} />
-                            <Stack.Screen name="AddDevice" component={AddDeviceScreen} />
-                            <Stack.Screen name="DeviceControl" component={DeviceControlScreen} />
-                            <Stack.Screen name="Profile" component={ProfileScreen} />
+                            <Stack.Screen name="DeviceList">
+                                {(props) => <DeviceListScreen {...props} user={user} onLogout={handleLogout} />}
+                            </Stack.Screen>
+                            <Stack.Screen name="AddDevice">
+                                {(props) => <AddDeviceScreen {...props} user={user} />}
+                            </Stack.Screen>
+                            <Stack.Screen name="DeviceControl">
+                                {(props) => <DeviceControlScreen {...props} user={user} />}
+                            </Stack.Screen>
+                            <Stack.Screen name="Profile">
+                                {(props) => <ProfileScreen {...props} user={user} onLogout={handleLogout} />}
+                            </Stack.Screen>
                         </>
                     ) : (
                         <>
                             <Stack.Screen name="AuthOptions" component={AuthOptionsScreen} />
-                            <Stack.Screen name="Login" component={LoginScreen} />
-                            <Stack.Screen name="Register" component={RegisterScreen} />
+                            <Stack.Screen name="Login">
+                                {(props) => <LoginScreen {...props} setUser={setUser} />}
+                            </Stack.Screen>
+                            <Stack.Screen name="Register">
+                                {(props) => <RegisterScreen {...props} setUser={setUser} />}
+                            </Stack.Screen>
                         </>
                     )}
                 </Stack.Navigator>

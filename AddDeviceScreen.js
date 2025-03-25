@@ -1,58 +1,112 @@
 import React, { useState } from 'react';
-import { View, TextInput, Button, Text } from 'react-native';
-import { v4 as uuidv4 } from 'uuid';
-import { doc, setDoc } from 'firebase/firestore';
-import { db, auth } from './firebaseConfig'; // Подключение к Firestore и Firebase
+import { View, StyleSheet, Keyboard, TouchableWithoutFeedback } from 'react-native';
+import { TextInput, Button, Text, Card, IconButton } from 'react-native-paper';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Clipboard from 'expo-clipboard';
+import { API_URL } from './config';
 
-// Генерация ссылки для скачивания
-const generateDownloadLink = (deviceId) => {
-    return `https://yourdomain.com/download-agent/${deviceId}`;
-};
-
-export default function AddDeviceScreen({ navigation }) {
+export default function AddDeviceScreen() {
     const [deviceName, setDeviceName] = useState('');
-    const [errorMessage, setErrorMessage] = useState('');
+    const [link, setLink] = useState('');
+    const [loading, setLoading] = useState(false);
 
     const handleAddDevice = async () => {
-        try {
-            const user = auth.currentUser;
-            if (!user) throw new Error('Пользователь не авторизован.');
+        setLoading(true);
+        const token = await AsyncStorage.getItem('token');
 
-            // Генерация уникального ID для устройства
-            const deviceId = uuidv4();
-            const deviceData = {
-                deviceName,
-                isBlocked: false,
-                deviceId,
-                createdAt: new Date(),
-            };
+        const res = await fetch(`${API_URL}/generate-link`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({ deviceName }),
+        });
 
-            // Добавление устройства в Firestore
-            await setDoc(doc(db, 'users', user.uid, 'devices', deviceId), deviceData);
-
-            // Генерация ссылки для скачивания и отправка пользователю
-            const downloadLink = generateDownloadLink(deviceId);
-            alert(`Устройство добавлено! Ссылка для скачивания агента: ${downloadLink}`);
-
-            // Перенаправление на экран списка устройств
-            navigation.navigate('DeviceList');
-        } catch (error) {
-            setErrorMessage(`Ошибка: ${error.message}`);
+        const data = await res.json();
+        if (res.ok) {
+            setLink(data.link);
+        } else {
+            alert(data.message);
         }
+        setLoading(false);
+    };
+
+    const copyLink = () => {
+        Clipboard.setStringAsync(link);
+        alert('Ссылка скопирована');
     };
 
     return (
-        <View style={{ padding: 20 }}>
-            <TextInput
-                label="Название устройства"
-                value={deviceName}
-                onChangeText={setDeviceName}
-                style={{ marginBottom: 10 }}
-            />
-            <Button mode="contained" onPress={handleAddDevice}>
-                Добавить устройство
-            </Button>
-            {errorMessage && <Text style={{ color: 'red', marginTop: 10 }}>{errorMessage}</Text>}
-        </View>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <View style={styles.container}>
+                <Card style={styles.card}>
+                    <IconButton icon="devices" size={40} style={styles.icon} />
+                    <Text style={styles.title}>Добавить устройство</Text>
+                    <TextInput
+                        label="Название устройства"
+                        value={deviceName}
+                        onChangeText={setDeviceName}
+                        mode="outlined"
+                        style={styles.input}
+                    />
+                    <Button mode="contained" style={styles.button} onPress={handleAddDevice} loading={loading}>
+                        Создать ссылку
+                    </Button>
+
+                    {link ? (
+                        <Card style={styles.linkCard}>
+                            <Text selectable style={styles.link}>{link}</Text>
+                            <Button mode="outlined" style={styles.copyButton} onPress={copyLink}>
+                                Скопировать
+                            </Button>
+                        </Card>
+                    ) : null}
+                </Card>
+            </View>
+        </TouchableWithoutFeedback>
     );
 }
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        justifyContent: 'center',
+        padding: 16,
+        backgroundColor: '#f8f9fa',
+    },
+    card: {
+        padding: 20,
+        borderRadius: 16,
+        elevation: 5,
+    },
+    icon: {
+        alignSelf: 'center',
+    },
+    title: {
+        fontSize: 22,
+        fontWeight: 'bold',
+        textAlign: 'center',
+        marginBottom: 20,
+    },
+    input: {
+        marginBottom: 15,
+    },
+    button: {
+        borderRadius: 10,
+        marginTop: 10,
+    },
+    linkCard: {
+        marginTop: 15,
+        padding: 10,
+        borderRadius: 10,
+        backgroundColor: '#e3f2fd',
+    },
+    link: {
+        marginBottom: 10,
+        color: '#0d47a1',
+    },
+    copyButton: {
+        borderRadius: 10,
+    },
+});

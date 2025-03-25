@@ -1,33 +1,55 @@
-import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithCredential, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
-import * as Google from 'expo-auth-session/providers/google';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_URL } from './config';
 
-const firebaseConfig = { /* твой конфиг Firebase */ };
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-
-// Авторизация через Google
-export const signInWithGoogle = async () => {
-    const [request, response, promptAsync] = Google.useAuthRequest({
-        clientId: '<ТВОЙ_GOOGLE_CLIENT_ID>',
+export const login = async (email, password) => {
+    const response = await fetch(`${API_URL}/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
     });
 
-    if (response?.type === 'success') {
-        const credential = GoogleAuthProvider.credential(response.authentication.idToken);
-        await signInWithCredential(auth, credential);
-    } else {
-        await promptAsync();
+    const data = await response.json();
+    if (data.token) {
+        await AsyncStorage.setItem('token', data.token);
+        return data.user;
     }
+
+    throw new Error(data.message || 'Ошибка входа');
 };
 
-// Регистрация через Email
-export const registerWithEmail = async (email, password) => {
-    return await createUserWithEmailAndPassword(auth, email, password);
+export const register = async (email, password) => {
+    const response = await fetch(`${API_URL}/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+    });
+
+    const data = await response.json();
+    if (data.token) {
+        await AsyncStorage.setItem('token', data.token);
+        return data.user;
+    }
+
+    throw new Error(data.message || 'Ошибка регистрации');
 };
 
-// Вход через Email
-export const loginWithEmail = async (email, password) => {
-    return await signInWithEmailAndPassword(auth, email, password);
+export const logout = async () => {
+    const token = await AsyncStorage.getItem('token');
+    await fetch(`${API_URL}/logout`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+    });
+    await AsyncStorage.removeItem('token');
 };
 
-export { auth };
+export const getCurrentUser = async () => {
+    const token = await AsyncStorage.getItem('token');
+    if (!token) return null;
+
+    const response = await fetch(`${API_URL}/user`, {
+        headers: { Authorization: `Bearer ${token}` },
+    });
+
+    const data = await response.json();
+    return data.user || null;
+};

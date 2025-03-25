@@ -1,73 +1,24 @@
-// GenerateLinkScreen.js
-import React, { useState } from 'react';
+import React from 'react';
 import { View } from 'react-native';
-import { TextInput, Button, Text } from 'react-native-paper';
-import { auth, db } from './firebaseConfig';
-import { v4 as uuidv4 } from 'uuid';
-import { doc, setDoc } from 'firebase/firestore';
-import * as Clipboard from 'expo-clipboard';
+import { Button } from 'react-native-paper';
+import { API_URL } from './config';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export default function GenerateLinkScreen() {
-    const [deviceName, setDeviceName] = useState('');
-    const [link, setLink] = useState(null);
-    const [isLoading, setIsLoading] = useState(false);
-
+export default function generateLinkScreen() {
     const generateLink = async () => {
-        const user = auth.currentUser;
-        if (!user || !deviceName) return;
-
-        setIsLoading(true);
-        const deviceId = uuidv4();
-        const deviceRef = doc(db, 'users', user.uid, 'devices', deviceId);
-
-        await setDoc(deviceRef, {
-            deviceName,
-            isBlocked: false,
-            createdAt: new Date(),
-        });
-
-        const config = {
-            userId: user.uid,
-            deviceId,
-            deviceName,
-        };
-
-        const response = await fetch('https://yourdomain.com/api/upload-config', {
+        const token = await AsyncStorage.getItem('token');
+        const response = await fetch(`${API_URL}/generate-link`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(config),
+            headers: { Authorization: `Bearer ${token}` },
         });
 
         const { url } = await response.json();
-        setLink(url);
-        setIsLoading(false);
-    };
-
-    const copyLink = async () => {
-        if (link) {
-            await Clipboard.setStringAsync(link);
-            alert('Ссылка скопирована');
-        }
+        alert(url || 'Ошибка получения ссылки');
     };
 
     return (
         <View style={{ padding: 20 }}>
-            <TextInput
-                label="Имя устройства"
-                value={deviceName}
-                onChangeText={setDeviceName}
-                style={{ marginBottom: 10 }}
-            />
-            <Button mode="contained" onPress={generateLink} loading={isLoading}>
-                Сгенерировать ссылку
-            </Button>
-            {link && (
-                <View style={{ marginTop: 20 }}>
-                    <Text>Ссылка на установку агента:</Text>
-                    <Text selectable>{link}</Text>
-                    <Button onPress={copyLink}>Скопировать ссылку</Button>
-                </View>
-            )}
+            <Button onPress={generateLink}>Генерировать ссылку</Button>
         </View>
     );
 }

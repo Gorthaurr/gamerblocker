@@ -1,35 +1,133 @@
-// RegisterScreen.js
 import React, { useState } from 'react';
-import { View } from 'react-native';
-import { TextInput, Button } from 'react-native-paper';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
-import { auth, db } from './firebaseConfig';
+import {
+    View,
+    StyleSheet,
+    Keyboard,
+    TouchableWithoutFeedback,
+    Alert,
+} from 'react-native';
+import {
+    TextInput,
+    Button,
+    Text,
+    Card,
+    IconButton,
+} from 'react-native-paper';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_URL } from './config';
 
-export default function RegisterScreen({ navigation }) {
+export default function RegisterScreen({ navigation, setUser }) {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
     const handleRegister = async () => {
         try {
-            const userCred = await createUserWithEmailAndPassword(auth, email, password);
-            await setDoc(doc(db, 'users', userCred.user.uid), {
-                email: userCred.user.email,
-                createdAt: new Date(),
-                role: 'user'
+            const response = await fetch(`${API_URL}/register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password }),
             });
-            alert('Регистрация успешна! Теперь войдите.');
-            navigation.replace('Login');
-        } catch (err) {
-            alert('Ошибка регистрации: ' + err.message);
+
+            const data = await response.json();
+            console.log('Ответ от сервера:', data);
+
+            if (response.ok && data.token && data.user) {
+                await AsyncStorage.setItem('token', data.token);
+                setUser(data.user); // App.js сам переключит экран
+            } else if (data.error) {
+                throw new Error(data.error);
+            } else {
+                throw new Error('Непредвиденная ошибка регистрации');
+            }
+        } catch (error) {
+            console.error('Ошибка регистрации:', error);
+            Alert.alert('Ошибка', error.message || 'Ошибка регистрации');
         }
     };
 
     return (
-        <View style={{ padding: 20 }}>
-            <TextInput label="Email" value={email} onChangeText={setEmail} autoCapitalize="none" style={{ marginBottom: 10 }} />
-            <TextInput label="Пароль" value={password} onChangeText={setPassword} secureTextEntry style={{ marginBottom: 10 }} />
-            <Button mode="contained" onPress={handleRegister}>Зарегистрироваться</Button>
-        </View>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <View style={styles.container}>
+                <Card style={styles.card}>
+                    <View style={styles.header}>
+                        <IconButton
+                            icon="arrow-left"
+                            size={24}
+                            style={styles.backButton}
+                            onPress={() => navigation.goBack()}
+                        />
+                        <IconButton icon="account-plus" size={40} style={styles.icon} />
+                    </View>
+                    <Text style={styles.title}>Регистрация</Text>
+                    <TextInput
+                        label="Email"
+                        value={email}
+                        onChangeText={setEmail}
+                        mode="outlined"
+                        style={styles.input}
+                        keyboardType="email-address"
+                        autoCapitalize="none"
+                    />
+                    <TextInput
+                        label="Пароль"
+                        value={password}
+                        onChangeText={setPassword}
+                        mode="outlined"
+                        secureTextEntry
+                        style={styles.input}
+                    />
+                    <Button
+                        mode="contained"
+                        style={styles.registerButton}
+                        onPress={handleRegister}
+                    >
+                        Зарегистрироваться
+                    </Button>
+                </Card>
+            </View>
+        </TouchableWithoutFeedback>
     );
 }
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        justifyContent: 'center',
+        backgroundColor: '#f8f9fa',
+        padding: 16,
+    },
+    card: {
+        padding: 20,
+        borderRadius: 16,
+        elevation: 5,
+    },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 20,
+    },
+    backButton: {
+        position: 'absolute',
+        left: 0,
+    },
+    icon: {
+        alignSelf: 'center',
+    },
+    title: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        textAlign: 'center',
+        marginBottom: 20,
+        color: '#333',
+    },
+    input: {
+        marginBottom: 15,
+    },
+    registerButton: {
+        marginTop: 10,
+        paddingVertical: 8,
+        borderRadius: 10,
+        backgroundColor: '#6200ee',
+    },
+});
