@@ -1,6 +1,18 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Keyboard, TouchableWithoutFeedback, Alert } from 'react-native';
-import { TextInput, Button, Text, Card, IconButton } from 'react-native-paper';
+import {
+    View,
+    StyleSheet,
+    Keyboard,
+    TouchableWithoutFeedback,
+    Alert,
+} from 'react-native';
+import {
+    TextInput,
+    Button,
+    Text,
+    Card,
+    IconButton,
+} from 'react-native-paper';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from './config';
 
@@ -10,22 +22,31 @@ export default function LoginScreen({ navigation, setUser }) {
 
     const handleLogin = async () => {
         try {
+            console.log('📨 Отправка данных на сервер...');
             const response = await fetch(`${API_URL}/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password }),
             });
 
-            if (!response.ok) {
-                throw new Error('Неверные учетные данные');
-            }
-
             const data = await response.json();
-            await AsyncStorage.setItem('token', data.token);
-            setUser(data.user);
-            navigation.replace('DeviceList'); // <-- добавлено
+            console.log('📥 Ответ от сервера:', data);
+
+            if (response.ok && data.token && data.user) {
+                console.log('✅ Успешный вход, сохранение токена...');
+                await AsyncStorage.setItem('token', data.token);
+                console.log('📌 Токен сохранён:', await AsyncStorage.getItem('token'));
+
+                setUser(data.user);
+                console.log('🎉 Пользователь установлен:', data.user);
+            } else {
+                const errorMsg = data.error || 'Неверные учетные данные';
+                console.warn('⚠️ Ошибка входа:', errorMsg);
+                throw new Error(errorMsg);
+            }
         } catch (err) {
-            Alert.alert('Ошибка входа', err.message);
+            console.error('🔥 Ошибка входа:', err);
+            Alert.alert('Ошибка входа', err.message || 'Что-то пошло не так');
         }
     };
 
@@ -64,7 +85,11 @@ export default function LoginScreen({ navigation, setUser }) {
                         secureTextEntry
                         style={styles.input}
                     />
-                    <Button mode="contained" style={styles.loginButton} onPress={handleLogin}>
+                    <Button
+                        mode="contained"
+                        style={styles.loginButton}
+                        onPress={handleLogin}
+                    >
                         Войти
                     </Button>
                     <Button mode="text" style={styles.forgotPasswordButton}>

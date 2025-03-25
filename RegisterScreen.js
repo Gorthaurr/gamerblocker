@@ -1,3 +1,4 @@
+// RegisterScreen.js
 import React, { useState } from 'react';
 import {
     View,
@@ -33,15 +34,14 @@ export default function RegisterScreen({ navigation, setUser }) {
 
             if (response.ok && data.token && data.user) {
                 await AsyncStorage.setItem('token', data.token);
-                setUser(data.user); // App.js сам переключит экран
-            } else if (data.error) {
-                throw new Error(data.error);
+                setUser(data.user); // Установим пользователя
+                // НЕ navigation.replace, App сам переключится по user
             } else {
-                throw new Error('Непредвиденная ошибка регистрации');
+                throw new Error(data.error || 'Ошибка регистрации');
             }
         } catch (error) {
             console.error('Ошибка регистрации:', error);
-            Alert.alert('Ошибка', error.message || 'Ошибка регистрации');
+            Alert.alert('Ошибка', error.message);
         }
     };
 
