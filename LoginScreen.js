@@ -39,6 +39,7 @@ export default function LoginScreen({ navigation, setUser }) {
 
                 setUser(data.user);
                 console.log('🎉 Пользователь установлен:', data.user);
+                navigation.replace('DeviceList');
             } else {
                 const errorMsg = data.error || 'Неверные учетные данные';
                 console.warn('⚠️ Ошибка входа:', errorMsg);

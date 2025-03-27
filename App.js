@@ -9,7 +9,6 @@ import AuthOptionsScreen from './AuthOptionsScreen';
 import LoginScreen from './LoginScreen';
 import RegisterScreen from './RegisterScreen';
 import AddDeviceScreen from './AddDeviceScreen';
-import DeviceListScreen from './DeviceListScreen';
 import DeviceControlScreen from './DeviceControlScreen';
 import ProfileScreen from './ProfileScreen';
 
@@ -65,11 +64,8 @@ export default function App() {
                 <Stack.Navigator screenOptions={{ headerShown: false }}>
                     {user ? (
                         <>
-                            <Stack.Screen name="DeviceList">
-                                {(props) => <DeviceListScreen {...props} user={user} onLogout={handleLogout} />}
-                            </Stack.Screen>
                             <Stack.Screen name="AddDevice">
-                                {(props) => <AddDeviceScreen {...props} user={user} />}
+                                {(props) => <AddDeviceScreen {...props} user={user} onLogout={handleLogout} />}
                             </Stack.Screen>
                             <Stack.Screen name="DeviceControl">
                                 {(props) => <DeviceControlScreen {...props} user={user} />}
