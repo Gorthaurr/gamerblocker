@@ -64,11 +64,11 @@ export default function App() {
                 <Stack.Navigator screenOptions={{ headerShown: false }}>
                     {user ? (
                         <>
-                            <Stack.Screen name="AddDevice">
-                                {(props) => <AddDeviceScreen {...props} user={user} onLogout={handleLogout} />}
-                            </Stack.Screen>
                             <Stack.Screen name="DeviceControl">
                                 {(props) => <DeviceControlScreen {...props} user={user} />}
+                            </Stack.Screen>
+                            <Stack.Screen name="AddDevice">
+                                {(props) => <AddDeviceScreen {...props} user={user} onLogout={handleLogout} />}
                             </Stack.Screen>
                             <Stack.Screen name="Profile">
                                 {(props) => <ProfileScreen {...props} user={user} onLogout={handleLogout} />}
