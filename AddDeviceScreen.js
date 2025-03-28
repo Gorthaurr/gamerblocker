@@ -73,13 +73,24 @@ export default function AddDeviceScreen({ navigation, user }) {
                     <Card.Content>
                         <Text style={styles.title}>Сгенерированная ссылка</Text>
                         <Text style={styles.link}>{generatedLink}</Text>
-                        <Button
-                            mode="contained"
-                            onPress={() => navigation.navigate('DeviceControl', { deviceId })}
-                            style={styles.button}
-                        >
-                            Перейти к управлению устройством
-                        </Button>
+                        <View style={styles.buttonContainer}>
+                            <Button
+                                mode="contained"
+                                onPress={() => navigation.navigate('DeviceControl', { deviceId })}
+                                style={[styles.button, styles.buttonFlex]}
+                            >
+                                Перейти к управлению устройством
+                            </Button>
+                            <IconButton
+                                icon="content-copy"
+                                size={24}
+                                onPress={async () => {
+                                    await Clipboard.setStringAsync(generatedLink);
+                                    Alert.alert('Успех', 'Ссылка скопирована в буфер обмена');
+                                }}
+                                style={styles.copyButton}
+                            />
+                        </View>
                     </Card.Content>
                 </Card>
             )}
@@ -106,6 +117,19 @@ const styles = StyleSheet.create({
     },
     button: {
         marginTop: 8,
+    },
+    buttonContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    buttonFlex: {
+        flex: 1,
+        marginRight: 8,
+    },
+    copyButton: {
+        marginTop: 8,
+        backgroundColor: '#6200ee',
     },
     link: {
         fontSize: 16,

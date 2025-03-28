@@ -4,7 +4,6 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { PaperProvider } from 'react-native-paper';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from './config';
-
 import AuthOptionsScreen from './AuthOptionsScreen';
 import LoginScreen from './LoginScreen';
 import RegisterScreen from './RegisterScreen';
